@@ -20,11 +20,11 @@ function getFrameUrl(index: number): string {
 export function Hero({ onExplore, onBookTestRide }: HeroProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
+
   // Array storing preloaded HTMLImageElements
   const imagesRef = useRef<(HTMLImageElement | null)[]>(new Array(TOTAL_FRAMES).fill(null));
   const isLoadedRef = useRef<boolean[]>(new Array(TOTAL_FRAMES).fill(false));
-  
+
   const currentFrameRef = useRef<number>(0);
   const targetFrameRef = useRef<number>(0);
   const isRenderingRef = useRef<boolean>(false);
@@ -53,21 +53,33 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
   const drawFrame = useCallback((frameIndex: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     // Find the requested image, or nearest available loaded frame
     let imgToDraw: HTMLImageElement | null = imagesRef.current[frameIndex] || null;
+
     if (!imgToDraw || !isLoadedRef.current[frameIndex]) {
       // Find nearest loaded frame
       for (let offset = 1; offset < TOTAL_FRAMES; offset++) {
         const lower = frameIndex - offset;
         const higher = frameIndex + offset;
-        if (lower >= 0 && imagesRef.current[lower] && isLoadedRef.current[lower]) {
+
+        if (
+          lower >= 0 &&
+          imagesRef.current[lower] &&
+          isLoadedRef.current[lower]
+        ) {
           imgToDraw = imagesRef.current[lower];
           break;
         }
-        if (higher < TOTAL_FRAMES && imagesRef.current[higher] && isLoadedRef.current[higher]) {
+
+        if (
+          higher < TOTAL_FRAMES &&
+          imagesRef.current[higher] &&
+          isLoadedRef.current[higher]
+        ) {
           imgToDraw = imagesRef.current[higher];
           break;
         }
@@ -81,7 +93,10 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
     const displayWidth = rect.width;
     const displayHeight = rect.height;
 
-    if (canvas.width !== Math.round(displayWidth * dpr) || canvas.height !== Math.round(displayHeight * dpr)) {
+    if (
+      canvas.width !== Math.round(displayWidth * dpr) ||
+      canvas.height !== Math.round(displayHeight * dpr)
+    ) {
       canvas.width = Math.round(displayWidth * dpr);
       canvas.height = Math.round(displayHeight * dpr);
     }
@@ -97,18 +112,15 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
     const imgH = imgToDraw.naturalHeight || 864;
 
     // Mobile vs Desktop Scaling Strategy:
-    // On mobile screens (displayWidth <= 768px): Full-bleed vertical Instagram-style cover scaling.
-    // - Occupies 100% visible phone viewport width (left edge to right edge, 0 side gaps).
-    // - Zero horizontal overflow (canvas is pinned to viewport width).
-    // - Crops excess vertically/horizontally without stretching or distorting the scooter.
-    // On desktop: contained portrait aspect ratio centered with atmospheric ambient lighting.
     const isMobile = displayWidth <= 768;
+
     const scale = isMobile
       ? Math.max(displayWidth / imgW, displayHeight / imgH)
       : Math.min(displayWidth / imgW, displayHeight / imgH);
 
     const renderW = imgW * scale;
     const renderH = imgH * scale;
+
     const offsetX = (displayWidth - renderW) / 2;
     const offsetY = (displayHeight - renderH) / 2;
 
@@ -125,35 +137,27 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
     // Helper to load a single frame
     const loadFrame = (index: number) => {
       if (imagesRef.current[index] || index >= TOTAL_FRAMES) return;
+
       const img = new Image();
       img.src = getFrameUrl(index);
+
       img.onload = () => {
         if (isCancelled) return;
+
         imagesRef.current[index] = img;
         isLoadedRef.current[index] = true;
+
         if (index === 0) {
           setFirstFrameLoaded(true);
           drawFrame(0);
         }
       };
+
+      // Only PNG files are used.
+      // The actual hero frames are frame_0001.png ... frame_0200.png.
       img.onerror = () => {
         if (isCancelled) return;
-        // Try fallback to .jpg or .webp if .png failed
-        const altImg = new Image();
-        altImg.src = `/hero-scroll/frame_${String(index + 1).padStart(4, '0')}.jpg`;
-        altImg.onload = () => {
-          if (isCancelled) return;
-          imagesRef.current[index] = altImg;
-          isLoadedRef.current[index] = true;
-          if (index === 0) {
-            setFirstFrameLoaded(true);
-            drawFrame(0);
-          }
-        };
-        altImg.onerror = () => {
-          if (isCancelled) return;
-          isLoadedRef.current[index] = false;
-        };
+        isLoadedRef.current[index] = false;
       };
     };
 
@@ -161,6 +165,7 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
     for (let i = 0; i < Math.min(16, TOTAL_FRAMES); i++) {
       loadFrame(i);
     }
+
     loadFrame(TOTAL_FRAMES - 1);
 
     // 2. Progressively preload remaining frames in background idle chunks of 12
@@ -181,11 +186,17 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
 
       if (currentPreloadIdx < TOTAL_FRAMES) {
         const win = window as unknown as {
-          requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+          requestIdleCallback?: (
+            cb: () => void,
+            opts?: { timeout: number }
+          ) => number;
           cancelIdleCallback?: (id: number) => void;
         };
+
         if (typeof win.requestIdleCallback === 'function') {
-          idleTimer = win.requestIdleCallback(preloadNextChunk, { timeout: 500 });
+          idleTimer = win.requestIdleCallback(preloadNextChunk, {
+            timeout: 500,
+          });
         } else {
           idleTimer = window.setTimeout(preloadNextChunk, 50);
         }
@@ -197,10 +208,12 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
     return () => {
       isCancelled = true;
       window.clearTimeout(initialDelay);
+
       if (idleTimer) {
         const win = window as unknown as {
           cancelIdleCallback?: (id: number) => void;
         };
+
         if (typeof win.cancelIdleCallback === 'function') {
           win.cancelIdleCallback(idleTimer);
         } else {
@@ -217,6 +230,7 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
     };
 
     window.addEventListener('resize', handleResize);
+
     return () => window.removeEventListener('resize', handleResize);
   }, [drawFrame]);
 
@@ -251,33 +265,34 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
       if (scrollableDistance <= 0) return;
 
       // Calculate progress strictly from 0 (top of hero) to 1 (end of hero scroll sequence)
-      // When at top of hero: progress = 0
-      // When scrolling through hero: progress 0 -> 1
-      // When user passes hero into Our Scooters: rawProgress > 1, clamped strictly to 1.0
       const rawProgress = -rect.top / scrollableDistance;
       const progress = Math.min(1, Math.max(0, rawProgress));
 
       setScrollProgress(progress);
 
-      // Map progress across all 200 frames (Frame 0 to 199):
-      // The complete sequence advances from 0.0 to 0.92, holding the FINAL FRAME (Frame 200)
-      // from 0.92 to 1.0. This guarantees the user reaches the final frame BEFORE leaving Hero.
+      // Map progress across all 200 frames
       const animProgress = Math.min(1, progress / 0.92);
+
       const frameIdx = Math.min(
         TOTAL_FRAMES - 1,
-        Math.max(0, Math.round(animProgress * (TOTAL_FRAMES - 1)))
+        Math.max(
+          0,
+          Math.round(animProgress * (TOTAL_FRAMES - 1))
+        )
       );
 
       targetFrameRef.current = frameIdx;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
+
     // Initial calculation
     handleScroll();
 
     return () => {
       isRunning = false;
       window.removeEventListener('scroll', handleScroll);
+
       if (animFrameIdRef.current) {
         cancelAnimationFrame(animFrameIdRef.current);
       }
@@ -287,7 +302,7 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
   // If user prefers reduced motion, show a lightweight static hero
   if (prefersReducedMotion) {
     return (
-      <section 
+      <section
         id="hero-section"
         aria-label="Patel Automobiles Cinematic Showcase"
         className="relative w-full bg-[#050505] flex flex-col items-center pt-8 pb-12 overflow-hidden"
@@ -295,6 +310,7 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
         <div className="relative z-10 max-w-5xl mx-auto px-4 text-center mb-6">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#111111]/90 border border-[#8B1E1E]/60 shadow-lg backdrop-blur-md mb-4">
             <span className="h-2 w-2 rounded-full bg-[#F9040C]"></span>
+
             <span className="font-heading font-extrabold text-[11px] uppercase tracking-widest text-[#FCE9E9]">
               PATEL AUTOMOBILES • AUTHORISED EV SHOWROOM
             </span>
@@ -302,11 +318,17 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
 
           <h1 className="font-heading font-black text-3xl sm:text-5xl md:text-6xl text-white uppercase tracking-tight leading-[0.95]">
             RIDE THE FUTURE IN <br className="hidden sm:inline" />
-            <span className="text-[#F9040C]">ELECTRIC POWER</span>
+            <span className="text-[#F9040C]">
+              ELECTRIC POWER
+            </span>
           </h1>
 
           <p className="text-xs sm:text-sm text-[#E8B7B7] max-w-2xl mx-auto font-medium mt-3">
-            39+ verified electric scooters across <strong className="text-white">Zelio</strong>, <strong className="text-white">Warivo</strong>, and <strong className="text-white">Dynamo</strong> in Lailunga, Raigarh & Kharsia.
+            39+ verified electric scooters across{' '}
+            <strong className="text-white">Zelio</strong>,{' '}
+            <strong className="text-white">Warivo</strong>, and{' '}
+            <strong className="text-white">Dynamo</strong> in Lailunga,
+            Raigarh & Kharsia.
           </p>
         </div>
 
@@ -343,21 +365,19 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
   }
 
   return (
-    <section 
+    <section
       ref={containerRef}
       id="hero-section"
       aria-label="Patel Automobiles Scroll-Driven Cinematic Showcase"
-      /* Balanced vertical scroll distance: 320vh - 350vh gives approx 10-12px per frame for a smooth ~200 frame sequence */
       className="relative w-full h-[320vh] sm:h-[350vh] bg-[#050505]"
     >
-      {/* Pinned Sticky Viewport: Fixed inside the viewport while user scrolls through the hero sequence */}
-      <div 
+      <div
         id="hero-sticky-stage"
         className="sticky top-0 w-full h-[100svh] max-w-[100vw] overflow-hidden flex flex-col justify-between items-center z-10 select-none"
       >
-        {/* Fallback image slot in case canvas is initializing or frames are loading */}
         {(() => {
           const fallbackUrl = getSlotImage('photos/home/hero-fallback');
+
           return fallbackUrl ? (
             <img
               src={fallbackUrl}
@@ -368,49 +388,41 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
           ) : null;
         })()}
 
-        {/* Canvas Rendering Surface for the 200-frame cinematic sequence */}
         <canvas
           ref={canvasRef}
           className="absolute inset-0 w-full h-full pointer-events-none z-0"
           aria-hidden="true"
         />
 
-        {/* Ambient atmospheric lighting flanking the portrait frame on wider screens */}
-        <div 
-          className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(ellipse_at_center,_#8B1E1E_0%,_#2C0F12_40%,_transparent_75%)] z-0" 
-          aria-hidden="true" 
+        <div
+          className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(ellipse_at_center,_#8B1E1E_0%,_#2C0F12_40%,_transparent_75%)] z-0"
+          aria-hidden="true"
         />
 
-        {/* Top Scrim Gradient for initial text readability */}
-        <div 
-          className="absolute top-0 inset-x-0 h-32 sm:h-40 bg-gradient-to-b from-[#050505]/90 via-[#050505]/40 to-transparent pointer-events-none z-[1] transition-opacity duration-300" 
+        <div
+          className="absolute top-0 inset-x-0 h-32 sm:h-40 bg-gradient-to-b from-[#050505]/90 via-[#050505]/40 to-transparent pointer-events-none z-[1] transition-opacity duration-300"
           style={{ opacity: Math.max(0, 1 - scrollProgress * 2.5) }}
-          aria-hidden="true" 
+          aria-hidden="true"
         />
 
-        {/* NOTE: No bottom scrim gradient is rendered to strictly preserve the clean white bottom strip */}
-
-        {/* TOP EDITORIAL CONTENT: Dealership Badge, Heading & Subtitle */}
-        <div 
+        <div
           className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 text-center pt-3 sm:pt-6 transition-opacity duration-300"
           style={{
-            /* Smoothly fades top text as user scrolls so the cinematic video sequence takes full focus */
             opacity: Math.max(0, 1 - scrollProgress * 2.5),
             pointerEvents: scrollProgress > 0.3 ? 'none' : 'auto',
           }}
         >
-          {/* Dealership Badge Pill */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#111111]/90 border border-[#8B1E1E]/60 shadow-lg shadow-[#2C0F12]/30 backdrop-blur-md mb-2 sm:mb-3">
             <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F9040C] opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#F9040C]"></span>
             </span>
+
             <span className="font-heading font-extrabold text-[10px] sm:text-xs uppercase tracking-widest text-[#FCE9E9]">
               PATEL AUTOMOBILES • AUTHORISED EV SHOWROOM
             </span>
           </div>
 
-          {/* Large Editorial Heading */}
           <h1 className="font-heading font-black text-2xl sm:text-4xl md:text-5xl lg:text-6xl text-white uppercase tracking-tight leading-[0.95]">
             RIDE THE FUTURE IN <br className="hidden sm:inline" />
             <span className="text-[#F9040C] drop-shadow-[0_0_25px_rgba(249,4,12,0.4)]">
@@ -418,32 +430,36 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
             </span>
           </h1>
 
-          {/* Subtitle */}
           <p className="text-[11px] sm:text-xs md:text-sm text-[#E8B7B7] max-w-2xl mx-auto font-medium mt-1.5 leading-relaxed">
-            39+ verified electric scooters across <strong className="text-white">Zelio</strong>, <strong className="text-white">Warivo</strong>, and <strong className="text-white">Dynamo</strong> in Lailunga, Raigarh & Kharsia.
+            39+ verified electric scooters across{' '}
+            <strong className="text-white">Zelio</strong>,{' '}
+            <strong className="text-white">Warivo</strong>, and{' '}
+            <strong className="text-white">Dynamo</strong> in Lailunga,
+            Raigarh & Kharsia.
           </p>
         </div>
 
-        {/* CENTER INTERACTIVE SCROLL CUE: Shows prompt initially and fades out as user begins playing */}
-        <div 
+        <div
           className="relative z-10 flex flex-col items-center pointer-events-none transition-opacity duration-300 my-auto"
           style={{
-            opacity: scrollProgress < 0.08 ? 1 : Math.max(0, 1 - (scrollProgress - 0.08) * 8),
+            opacity:
+              scrollProgress < 0.08
+                ? 1
+                : Math.max(0, 1 - (scrollProgress - 0.08) * 8),
           }}
         >
-          {/* Subtle Dynamic Scrub Indicator */}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0D0D0D]/90 border border-[#8B1E1E]/60 backdrop-blur-md shadow-lg shadow-black/60">
             <span className="h-1.5 w-1.5 rounded-full bg-[#F9040C] animate-pulse" />
+
             <span className="font-heading font-black text-[9px] sm:text-[10px] uppercase tracking-widest text-[#FCE9E9]">
               SCROLL DOWN TO PLAY
             </span>
+
             <ChevronDown className="w-3 h-3 text-[#F9040C] animate-bounce" />
           </div>
         </div>
 
-        {/* BOTTOM ACTION BUTTONS & HIGHLIGHTS */}
-        {/* Fades out smoothly as soon as user begins scrolling so the bottom white strip stays 100% visible and un-covered */}
-        <div 
+        <div
           className="relative z-10 w-full max-w-4xl mx-auto px-4 pb-3 sm:pb-5 text-center transition-all duration-300"
           style={{
             opacity: Math.max(0, 1 - scrollProgress * 3.0),
@@ -451,8 +467,7 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
             pointerEvents: scrollProgress > 0.2 ? 'none' : 'auto',
           }}
         >
-          {/* Action Buttons: high contrast and clickable at the start */}
-          <div 
+          <div
             id="hero-action-buttons"
             className="w-full flex flex-row flex-wrap items-center justify-center gap-3 sm:gap-4 mb-2.5 sm:mb-3 pointer-events-auto"
           >
@@ -475,16 +490,17 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
             </button>
           </div>
 
-          {/* Quick Verified Highlights Pill Grid */}
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-[#E8B7B7] pointer-events-auto">
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0D0D0D]/90 border border-[#2C0F12]">
               <Sparkles className="w-3.5 h-3.5 text-[#F9040C]" />
               <span>39 Verified Models</span>
             </div>
+
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0D0D0D]/90 border border-[#2C0F12]">
               <Zap className="w-3.5 h-3.5 text-[#F9040C]" />
               <span>Up to 120km+ Range</span>
             </div>
+
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0D0D0D]/90 border border-[#2C0F12]">
               <ShieldCheck className="w-3.5 h-3.5 text-[#F9040C]" />
               <span>Lailunga • Raigarh • Kharsia</span>
