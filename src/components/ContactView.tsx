@@ -865,7 +865,7 @@ export function ContactView({ onNavigate }: ContactViewProps) {
             </div>
             
             <a
-              href={`https://instagram.com/${siteConfig.socialLinks.instagram}`}
+              href="https://www.instagram.com/patel_automobile_lailunga/"
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2 rounded-xl bg-[#1F070A] hover:bg-red-950/60 border border-red-600/40 text-xs font-bold text-white transition-colors flex items-center gap-1.5 shrink-0"

@@ -3,19 +3,10 @@
  * PATEL AUTOMOBILES — GOOGLE MAPS CONFIGURATION
  * =========================================================================
  *
- * Replace PATEL_MAP_EMBED_URL with the official Google Maps Embed URL supplied by Patel Automobiles.
- * Example format: "https://www.google.com/maps/embed?pb=..."
- *
- * Replace PATEL_DIRECTIONS_URL with the official Google Maps directions URL.
- * Example format: "https://maps.google.com/?q=..." or "https://goo.gl/maps/..."
- *
- * Both values are intentionally left empty until Patel Automobiles provides
- * the exact Google Maps coordinates/embed URL.
- * DO NOT hard-code an invented location, address, or coordinates.
+ * Official Google Maps Embed URL for Patel Automobiles.
  */
 
-// Replace PATEL_MAP_EMBED_URL with the official Google Maps Embed URL supplied by Patel Automobiles.
-export const PATEL_MAP_EMBED_URL: string = "";
+export const PATEL_MAP_EMBED_URL: string =
+  "https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d3701.6582443750217!2d83.38776927528124!3d21.90923227996964!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMjHCsDU0JzMzLjIiTiA4M8KwMjMnMjUuMiJF!5e0!3m2!1sen!2sin!4v1790086891200!5m2!1sen!2sin";
 
-// Replace PATEL_DIRECTIONS_URL with the official Google Maps directions URL.
 export const PATEL_DIRECTIONS_URL: string = "";

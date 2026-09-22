@@ -289,7 +289,7 @@ export function StoriesSection() {
                   Follow Patel Automobiles for delivery photos, festive updates, and customer milestones.
                 </p>
                 <a 
-                  href={`https://instagram.com/${siteConfig.socialLinks.instagram}`} 
+                  href="https://www.instagram.com/patel_automobile_lailunga/"
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-xs font-bold text-[#F9040C] hover:underline"

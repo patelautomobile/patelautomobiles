@@ -178,7 +178,7 @@ export function Footer({ onNavigate }: FooterProps) {
 
               {siteConfig.socialLinks.instagram && (
                 <a 
-                  href={`https://instagram.com/${siteConfig.socialLinks.instagram}`}
+                  href="https://www.instagram.com/patel_automobile_lailunga/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0D0D0D] hover:bg-[#2C0F12] border border-[#511010] text-[#FCE9E9] hover:text-white text-xs font-bold transition-colors"
