@@ -19,7 +19,7 @@ export const siteConfig: SiteConfig = {
   openingHours: null,
   googleMapsUrl: null,
   socialLinks: {
-    instagram: "Patel_Automobiles_Lelunga",
+    instagram:"patel_automobile_lailunga",
     youtube: null,
     facebook: null
   },

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Zap } from 'lucide-react';
-import { siteConfig } from '../config/site';
+import { getSlotImage } from '../lib/imageSlots';
 
 interface LogoSlotProps {
   className?: string;
@@ -16,22 +16,17 @@ export const LogoSlot: React.FC<LogoSlotProps> = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  // Path from siteConfig or default standard upload path
-  const logoPath = siteConfig.logo || '/images/logo/patel-automobiles-logo.webp';
+  // Official uploaded logo:
+  // src/assets/site-images/branding/logo/
+  const logoPath = getSlotImage('branding/logo');
 
   return (
     <div className={`flex items-center gap-2.5 sm:gap-3 ${className}`}>
-      {/* 
-        CLEARLY DEFINED LOGO UPLOAD PLACEHOLDER
-        Replace or upload your official logo asset to:
-        ${logoPath}
-        Supports .webp, .png, or .svg.
-      */}
-      <div 
+      <div
         id="patel-automobiles-logo-slot"
         className="relative flex items-center justify-center shrink-0"
       >
-        {!imageError && (
+        {logoPath && !imageError && (
           <img
             id="patel-automobiles-official-logo"
             src={logoPath}
@@ -44,24 +39,23 @@ export const LogoSlot: React.FC<LogoSlotProps> = ({
           />
         )}
 
-        {/* Clean, premium placeholder shown when the image file is not yet uploaded */}
-        {(!imageLoaded || imageError) && (
-          <div 
+        {(!imageLoaded || imageError || !logoPath) && (
+          <div
             id="logo-upload-placeholder-badge"
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-[#24060A] to-[#0D0507] border border-[#DC2626]/40 flex items-center justify-center shadow-md shadow-[#E50914]/15 group-hover:border-[#E50914] transition-colors"
-            title="Upload official logo to /images/logo/patel-automobiles-logo.webp"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-[#24060A] to-[#0D0507] border border-[#DC2626]/40 flex items-center justify-center shadow-md shadow-[#E50914]/15"
+            title="Patel Automobiles Official Logo"
           >
-            <Zap className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#FF2E3B] group-hover:scale-110 transition-transform" />
+            <Zap className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#FF2E3B]" />
           </div>
         )}
       </div>
 
-      {/* Brand Name Typography: PATEL AUTOMOBILES */}
       {showText && (
         <div className="flex flex-col select-none min-w-0">
-          <span className="font-heading font-black tracking-tight text-sm xs:text-base sm:text-lg md:text-xl text-white group-hover:text-[#FF2E3B] transition-colors uppercase leading-tight whitespace-nowrap">
+          <span className="font-heading font-black tracking-tight text-sm xs:text-base sm:text-lg md:text-xl text-white uppercase leading-tight whitespace-nowrap">
             PATEL <span className="text-[#E50914]">AUTOMOBILES</span>
           </span>
+
           <span className="text-[9px] sm:text-[10px] font-semibold tracking-wider text-slate-400 uppercase leading-tight hidden xs:block">
             Electric Scooters Showroom • Lailunga
           </span>
