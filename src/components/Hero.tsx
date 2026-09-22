@@ -1,5 +1,17 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { ArrowRight, Calendar, Sparkles, Zap, ShieldCheck, ChevronDown } from 'lucide-react';
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+} from 'react';
+import {
+  ArrowRight,
+  Calendar,
+  Sparkles,
+  Zap,
+  ShieldCheck,
+  ChevronDown,
+} from 'lucide-react';
 import { getSlotImage } from '../lib/imageSlots';
 
 interface HeroProps {
@@ -11,358 +23,509 @@ const TOTAL_FRAMES = 200;
 const FIRST_FRAME_URL = '/hero-scroll/frame_0001.png';
 
 function getFrameUrl(index: number): string {
-  // index is 0-based, files are 1-based (frame_0001.png to frame_0200.png)
   const frameNumber = index + 1;
-  const padded = String(frameNumber).padStart(4, '0');
-  return `/hero-scroll/frame_${padded}.png`;
+  return `/hero-scroll/frame_${String(frameNumber).padStart(4, '0')}.png`;
 }
 
-export function Hero({ onExplore, onBookTestRide }: HeroProps) {
+export function Hero({
+  onExplore,
+  onBookTestRide,
+}: HeroProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Array storing preloaded HTMLImageElements
-  const imagesRef = useRef<(HTMLImageElement | null)[]>(new Array(TOTAL_FRAMES).fill(null));
-  const isLoadedRef = useRef<boolean[]>(new Array(TOTAL_FRAMES).fill(false));
+  const imagesRef = useRef<(HTMLImageElement | null)[]>(
+    new Array(TOTAL_FRAMES).fill(null)
+  );
 
-  const currentFrameRef = useRef<number>(0);
-  const targetFrameRef = useRef<number>(0);
-  const isRenderingRef = useRef<boolean>(false);
-  const animFrameIdRef = useRef<number | null>(null);
+  const loadedRef = useRef<boolean[]>(
+    new Array(TOTAL_FRAMES).fill(false)
+  );
+
+  const loadingRef = useRef<boolean[]>(
+    new Array(TOTAL_FRAMES).fill(false)
+  );
+
+  const currentFrameRef = useRef(0);
+  const targetFrameRef = useRef(0);
+  const renderFrameRef = useRef<number | null>(null);
+  const cancelledRef = useRef(false);
 
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [firstFrameLoaded, setFirstFrameLoaded] = useState(false);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
-  // Check for prefers-reduced-motion
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
+  /*
+   * ---------------------------------------------------------
+   * CANVAS DRAWING
+   * ---------------------------------------------------------
+   */
 
-    const handleChange = (e: MediaQueryListEvent) => {
-      setPrefersReducedMotion(e.matches);
-    };
-
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    }
-  }, []);
-
-  // Frame drawer with strict portrait aspect ratio preservation & zero cropping of the white strip
   const drawFrame = useCallback((frameIndex: number) => {
     const canvas = canvasRef.current;
+
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
+
     if (!ctx) return;
 
-    // Find the requested image, or nearest available loaded frame
-    let imgToDraw: HTMLImageElement | null = imagesRef.current[frameIndex] || null;
+    /*
+     * First try the exact requested frame.
+     */
+    let image = imagesRef.current[frameIndex];
 
-    if (!imgToDraw || !isLoadedRef.current[frameIndex]) {
-      // Find nearest loaded frame
-      for (let offset = 1; offset < TOTAL_FRAMES; offset++) {
-        const lower = frameIndex - offset;
-        const higher = frameIndex + offset;
+    /*
+     * If the requested frame isn't ready, find the closest
+     * already-loaded frame so the hero never becomes blank.
+     */
+    if (!image || !loadedRef.current[frameIndex]) {
+      for (let distance = 1; distance < TOTAL_FRAMES; distance++) {
+        const before = frameIndex - distance;
+        const after = frameIndex + distance;
 
         if (
-          lower >= 0 &&
-          imagesRef.current[lower] &&
-          isLoadedRef.current[lower]
+          before >= 0 &&
+          loadedRef.current[before] &&
+          imagesRef.current[before]
         ) {
-          imgToDraw = imagesRef.current[lower];
+          image = imagesRef.current[before];
           break;
         }
 
         if (
-          higher < TOTAL_FRAMES &&
-          imagesRef.current[higher] &&
-          isLoadedRef.current[higher]
+          after < TOTAL_FRAMES &&
+          loadedRef.current[after] &&
+          imagesRef.current[after]
         ) {
-          imgToDraw = imagesRef.current[higher];
+          image = imagesRef.current[after];
           break;
         }
       }
     }
 
-    if (!imgToDraw || !imgToDraw.naturalWidth) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const displayWidth = rect.width;
-    const displayHeight = rect.height;
-
-    if (
-      canvas.width !== Math.round(displayWidth * dpr) ||
-      canvas.height !== Math.round(displayHeight * dpr)
-    ) {
-      canvas.width = Math.round(displayWidth * dpr);
-      canvas.height = Math.round(displayHeight * dpr);
+    if (!image || !image.naturalWidth) {
+      return;
     }
 
-    ctx.save();
-    ctx.scale(dpr, dpr);
+    const rect = canvas.getBoundingClientRect();
 
-    // Deep solid black canvas background
+    const width = Math.max(1, rect.width);
+    const height = Math.max(1, rect.height);
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    const pixelWidth = Math.round(width * dpr);
+    const pixelHeight = Math.round(height * dpr);
+
+    if (
+      canvas.width !== pixelWidth ||
+      canvas.height !== pixelHeight
+    ) {
+      canvas.width = pixelWidth;
+      canvas.height = pixelHeight;
+    }
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    /*
+     * Black background.
+     */
     ctx.fillStyle = '#050505';
-    ctx.fillRect(0, 0, displayWidth, displayHeight);
+    ctx.fillRect(0, 0, width, height);
 
-    const imgW = imgToDraw.naturalWidth || 480;
-    const imgH = imgToDraw.naturalHeight || 864;
+    const imageWidth = image.naturalWidth;
+    const imageHeight = image.naturalHeight;
 
-    // Mobile vs Desktop Scaling Strategy:
-    const isMobile = displayWidth <= 768;
+    const isMobile = width <= 768;
 
+    /*
+     * Preserve the portrait composition.
+     *
+     * Mobile uses cover so the scooter fills the screen.
+     * Desktop uses contain so the full composition remains visible.
+     */
     const scale = isMobile
-      ? Math.max(displayWidth / imgW, displayHeight / imgH)
-      : Math.min(displayWidth / imgW, displayHeight / imgH);
+      ? Math.max(
+          width / imageWidth,
+          height / imageHeight
+        )
+      : Math.min(
+          width / imageWidth,
+          height / imageHeight
+        );
 
-    const renderW = imgW * scale;
-    const renderH = imgH * scale;
+    const renderWidth = imageWidth * scale;
+    const renderHeight = imageHeight * scale;
 
-    const offsetX = (displayWidth - renderW) / 2;
-    const offsetY = (displayHeight - renderH) / 2;
+    const offsetX = (width - renderWidth) / 2;
+    const offsetY = (height - renderHeight) / 2;
 
-    // Draw the image cleanly
-    ctx.drawImage(imgToDraw, offsetX, offsetY, renderW, renderH);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
-    ctx.restore();
+    ctx.drawImage(
+      image,
+      offsetX,
+      offsetY,
+      renderWidth,
+      renderHeight
+    );
   }, []);
 
-  // Intelligent Preloading of ~200 Frames
-  useEffect(() => {
-    let isCancelled = false;
+  /*
+   * ---------------------------------------------------------
+   * LOAD ONE FRAME
+   * ---------------------------------------------------------
+   */
 
-    // Helper to load a single frame
-    const loadFrame = (index: number) => {
-      if (imagesRef.current[index] || index >= TOTAL_FRAMES) return;
+  const loadFrame = useCallback(
+    (index: number) => {
+      if (
+        index < 0 ||
+        index >= TOTAL_FRAMES ||
+        cancelledRef.current
+      ) {
+        return;
+      }
 
-      const img = new Image();
-      img.src = getFrameUrl(index);
+      if (
+        loadedRef.current[index] ||
+        loadingRef.current[index]
+      ) {
+        return;
+      }
 
-      img.onload = () => {
-        if (isCancelled) return;
+      loadingRef.current[index] = true;
 
-        imagesRef.current[index] = img;
-        isLoadedRef.current[index] = true;
+      const image = new Image();
 
+      /*
+       * Helps browsers prioritize decoding the image.
+       */
+      image.decoding = 'async';
+
+      image.onload = async () => {
+        if (cancelledRef.current) return;
+
+        try {
+          if ('decode' in image) {
+            await image.decode().catch(() => {});
+          }
+        } catch {
+          // Ignore decode failures; normal image rendering can continue.
+        }
+
+        if (cancelledRef.current) return;
+
+        imagesRef.current[index] = image;
+        loadedRef.current[index] = true;
+        loadingRef.current[index] = false;
+
+        /*
+         * Immediately draw the first frame.
+         */
         if (index === 0) {
-          setFirstFrameLoaded(true);
+          currentFrameRef.current = 0;
+          targetFrameRef.current = 0;
           drawFrame(0);
+        }
+
+        /*
+         * If this is the frame currently requested by scrolling,
+         * draw it immediately when it becomes available.
+         */
+        if (index === targetFrameRef.current) {
+          currentFrameRef.current = index;
+          drawFrame(index);
         }
       };
 
-      // Only PNG files are used.
-      // The actual hero frames are frame_0001.png ... frame_0200.png.
-      img.onerror = () => {
-        if (isCancelled) return;
-        isLoadedRef.current[index] = false;
+      image.onerror = () => {
+        loadingRef.current[index] = false;
       };
-    };
 
-    // 1. Immediately load frame 0, initial priority batch, and final frame (frame 200)
-    for (let i = 0; i < Math.min(16, TOTAL_FRAMES); i++) {
+      /*
+       * Firebase absolute-root path.
+       */
+      image.src = getFrameUrl(index);
+    },
+    [drawFrame]
+  );
+
+  /*
+   * ---------------------------------------------------------
+   * HERO FRAME PRELOADING
+   * ---------------------------------------------------------
+   */
+
+  useEffect(() => {
+    cancelledRef.current = false;
+
+    /*
+     * Load the first frame immediately.
+     */
+    loadFrame(0);
+
+    /*
+     * Load the next few frames immediately so scrolling
+     * starts smoothly.
+     */
+    for (let i = 1; i < 12; i++) {
       loadFrame(i);
     }
 
+    /*
+     * Also load the final frame so the end state is available.
+     */
     loadFrame(TOTAL_FRAMES - 1);
 
-    // 2. Progressively preload remaining frames in background idle chunks of 12
-    let currentPreloadIdx = 16;
-    let idleTimer: number | null = null;
+    let nextIndex = 12;
+    let timer: number | null = null;
 
-    const preloadNextChunk = () => {
-      if (isCancelled || currentPreloadIdx >= TOTAL_FRAMES) return;
+    const preloadChunk = () => {
+      if (
+        cancelledRef.current ||
+        nextIndex >= TOTAL_FRAMES
+      ) {
+        return;
+      }
 
-      const chunkSize = 12;
-      const end = Math.min(currentPreloadIdx + chunkSize, TOTAL_FRAMES);
+      /*
+       * Small batches are safer for mobile browsers than
+       * attempting to create 200 image requests at once.
+       */
+      const chunkEnd = Math.min(
+        nextIndex + 8,
+        TOTAL_FRAMES
+      );
 
-      for (let i = currentPreloadIdx; i < end; i++) {
+      for (let i = nextIndex; i < chunkEnd; i++) {
         loadFrame(i);
       }
 
-      currentPreloadIdx = end;
+      nextIndex = chunkEnd;
 
-      if (currentPreloadIdx < TOTAL_FRAMES) {
-        const win = window as unknown as {
-          requestIdleCallback?: (
-            cb: () => void,
-            opts?: { timeout: number }
-          ) => number;
-          cancelIdleCallback?: (id: number) => void;
-        };
-
-        if (typeof win.requestIdleCallback === 'function') {
-          idleTimer = win.requestIdleCallback(preloadNextChunk, {
-            timeout: 500,
-          });
-        } else {
-          idleTimer = window.setTimeout(preloadNextChunk, 50);
-        }
+      if (nextIndex < TOTAL_FRAMES) {
+        timer = window.setTimeout(preloadChunk, 100);
       }
     };
 
-    const initialDelay = window.setTimeout(preloadNextChunk, 150);
+    timer = window.setTimeout(preloadChunk, 100);
 
     return () => {
-      isCancelled = true;
-      window.clearTimeout(initialDelay);
+      cancelledRef.current = true;
 
-      if (idleTimer) {
-        const win = window as unknown as {
-          cancelIdleCallback?: (id: number) => void;
-        };
-
-        if (typeof win.cancelIdleCallback === 'function') {
-          win.cancelIdleCallback(idleTimer);
-        } else {
-          window.clearTimeout(idleTimer);
-        }
+      if (timer !== null) {
+        window.clearTimeout(timer);
       }
     };
-  }, [drawFrame]);
+  }, [loadFrame]);
 
-  // Handle Window Resize to update canvas display size
+  /*
+   * ---------------------------------------------------------
+   * LOAD FRAMES AROUND CURRENT SCROLL POSITION
+   * ---------------------------------------------------------
+   *
+   * This is important for live Firebase:
+   * the browser doesn't need every frame loaded before
+   * scrolling can start.
+   */
+
+  useEffect(() => {
+    const handleFrameDemand = () => {
+      const target = targetFrameRef.current;
+
+      /*
+       * Load a small window around the requested frame.
+       */
+      for (let offset = -3; offset <= 3; offset++) {
+        loadFrame(target + offset);
+      }
+    };
+
+    const interval = window.setInterval(
+      handleFrameDemand,
+      80
+    );
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [loadFrame]);
+
+  /*
+   * ---------------------------------------------------------
+   * RESIZE
+   * ---------------------------------------------------------
+   */
+
   useEffect(() => {
     const handleResize = () => {
       drawFrame(currentFrameRef.current);
     };
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener(
+      'resize',
+      handleResize,
+      { passive: true }
+    );
 
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener(
+      'orientationchange',
+      handleResize,
+      { passive: true }
+    );
+
+    /*
+     * Draw once after the page has established layout.
+     */
+    requestAnimationFrame(() => {
+      drawFrame(currentFrameRef.current);
+    });
+
+    return () => {
+      window.removeEventListener(
+        'resize',
+        handleResize
+      );
+
+      window.removeEventListener(
+        'orientationchange',
+        handleResize
+      );
+    };
   }, [drawFrame]);
 
-  // Scroll Position -> Video Frame Animation Loop
+  /*
+   * ---------------------------------------------------------
+   * SCROLL → FRAME
+   * ---------------------------------------------------------
+   *
+   * IMPORTANT:
+   * There is intentionally NO prefers-reduced-motion
+   * condition here.
+   *
+   * That means the live website always gets the scroll
+   * animation instead of silently switching to a static hero.
+   */
+
   useEffect(() => {
-    if (prefersReducedMotion) return;
+    const updateFromScroll = () => {
+      const container = containerRef.current;
 
-    let isRunning = true;
+      if (!container) return;
 
-    const renderLoop = () => {
-      if (!isRunning) return;
+      const rect = container.getBoundingClientRect();
+
+      const scrollableDistance =
+        rect.height - window.innerHeight;
+
+      if (scrollableDistance <= 0) return;
+
+      const rawProgress =
+        -rect.top / scrollableDistance;
+
+      const progress = Math.min(
+        1,
+        Math.max(0, rawProgress)
+      );
+
+      setScrollProgress(progress);
+
+      /*
+       * Keep the final part of the hero for the transition
+       * into the next section.
+       */
+      const animationProgress = Math.min(
+        1,
+        progress / 0.92
+      );
+
+      const frameIndex = Math.min(
+        TOTAL_FRAMES - 1,
+        Math.max(
+          0,
+          Math.round(
+            animationProgress *
+              (TOTAL_FRAMES - 1)
+          )
+        )
+      );
+
+      targetFrameRef.current = frameIndex;
+
+      /*
+       * Immediately request the target frame and nearby frames.
+       */
+      for (let offset = -2; offset <= 2; offset++) {
+        loadFrame(frameIndex + offset);
+      }
+    };
+
+    /*
+     * Use a passive listener so mobile scrolling remains smooth.
+     */
+    window.addEventListener(
+      'scroll',
+      updateFromScroll,
+      { passive: true }
+    );
+
+    /*
+     * Initial state.
+     */
+    updateFromScroll();
+
+    return () => {
+      window.removeEventListener(
+        'scroll',
+        updateFromScroll
+      );
+    };
+  }, [loadFrame]);
+
+  /*
+   * ---------------------------------------------------------
+   * FRAME RENDER LOOP
+   * ---------------------------------------------------------
+   */
+
+  useEffect(() => {
+    let running = true;
+
+    const render = () => {
+      if (!running) return;
 
       const target = targetFrameRef.current;
       const current = currentFrameRef.current;
 
-      if (current !== target) {
+      if (target !== current) {
         currentFrameRef.current = target;
         drawFrame(target);
       }
 
-      animFrameIdRef.current = requestAnimationFrame(renderLoop);
+      renderFrameRef.current =
+        requestAnimationFrame(render);
     };
 
-    animFrameIdRef.current = requestAnimationFrame(renderLoop);
-
-    const handleScroll = () => {
-      if (!containerRef.current) return;
-
-      const rect = containerRef.current.getBoundingClientRect();
-      const scrollableDistance = rect.height - window.innerHeight;
-
-      if (scrollableDistance <= 0) return;
-
-      // Calculate progress strictly from 0 (top of hero) to 1 (end of hero scroll sequence)
-      const rawProgress = -rect.top / scrollableDistance;
-      const progress = Math.min(1, Math.max(0, rawProgress));
-
-      setScrollProgress(progress);
-
-      // Map progress across all 200 frames
-      const animProgress = Math.min(1, progress / 0.92);
-
-      const frameIdx = Math.min(
-        TOTAL_FRAMES - 1,
-        Math.max(
-          0,
-          Math.round(animProgress * (TOTAL_FRAMES - 1))
-        )
-      );
-
-      targetFrameRef.current = frameIdx;
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    // Initial calculation
-    handleScroll();
+    renderFrameRef.current =
+      requestAnimationFrame(render);
 
     return () => {
-      isRunning = false;
-      window.removeEventListener('scroll', handleScroll);
+      running = false;
 
-      if (animFrameIdRef.current) {
-        cancelAnimationFrame(animFrameIdRef.current);
+      if (renderFrameRef.current !== null) {
+        cancelAnimationFrame(
+          renderFrameRef.current
+        );
       }
     };
-  }, [drawFrame, prefersReducedMotion]);
+  }, [drawFrame]);
 
-  // If user prefers reduced motion, show a lightweight static hero
-  if (prefersReducedMotion) {
-    return (
-      <section
-        id="hero-section"
-        aria-label="Patel Automobiles Cinematic Showcase"
-        className="relative w-full bg-[#050505] flex flex-col items-center pt-8 pb-12 overflow-hidden"
-      >
-        <div className="relative z-10 max-w-5xl mx-auto px-4 text-center mb-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#111111]/90 border border-[#8B1E1E]/60 shadow-lg backdrop-blur-md mb-4">
-            <span className="h-2 w-2 rounded-full bg-[#F9040C]"></span>
-
-            <span className="font-heading font-extrabold text-[11px] uppercase tracking-widest text-[#FCE9E9]">
-              PATEL AUTOMOBILES • AUTHORISED EV SHOWROOM
-            </span>
-          </div>
-
-          <h1 className="font-heading font-black text-3xl sm:text-5xl md:text-6xl text-white uppercase tracking-tight leading-[0.95]">
-            RIDE THE FUTURE IN <br className="hidden sm:inline" />
-            <span className="text-[#F9040C]">
-              ELECTRIC POWER
-            </span>
-          </h1>
-
-          <p className="text-xs sm:text-sm text-[#E8B7B7] max-w-2xl mx-auto font-medium mt-3">
-            39+ verified electric scooters across{' '}
-            <strong className="text-white">Zelio</strong>,{' '}
-            <strong className="text-white">Warivo</strong>, and{' '}
-            <strong className="text-white">Dynamo</strong> in Lailunga,
-            Raigarh & Kharsia.
-          </p>
-        </div>
-
-        <div className="relative w-full max-w-lg aspect-[941/1671] max-h-[70vh] mx-auto flex items-center justify-center overflow-hidden my-4">
-          <img
-            src={FIRST_FRAME_URL}
-            alt="Patel Automobiles Cinematic Portrait"
-            className="w-full h-full object-contain"
-            loading="eager"
-          />
-        </div>
-
-        <div className="w-full px-4 pt-4 flex flex-row flex-wrap items-center justify-center gap-3 sm:gap-4 z-10">
-          <button
-            id="hero-explore-scooters-btn"
-            onClick={onExplore}
-            className="inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3 rounded-xl bg-[#D71920] hover:bg-[#F9040C] text-white font-heading font-black text-sm uppercase tracking-wider transition-all cursor-pointer"
-          >
-            <span>Explore All 39 Scooters</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-
-          <button
-            id="hero-book-test-ride-btn"
-            onClick={onBookTestRide}
-            className="inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3 rounded-xl bg-[#0D0D0D] hover:bg-[#2C0F12] text-white border border-[#8B1E1E] hover:border-[#F9040C] font-heading font-black text-sm uppercase tracking-wider transition-all cursor-pointer"
-          >
-            <Calendar className="w-4 h-4 text-[#F9040C]" />
-            <span>Book Test Ride</span>
-          </button>
-        </div>
-      </section>
-    );
-  }
+  /*
+   * ---------------------------------------------------------
+   * HERO
+   * ---------------------------------------------------------
+   */
 
   return (
     <section
@@ -376,7 +539,9 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
         className="sticky top-0 w-full h-[100svh] max-w-[100vw] overflow-hidden flex flex-col justify-between items-center z-10 select-none"
       >
         {(() => {
-          const fallbackUrl = getSlotImage('photos/home/hero-fallback');
+          const fallbackUrl = getSlotImage(
+            'photos/home/hero-fallback'
+          );
 
           return fallbackUrl ? (
             <img
@@ -401,21 +566,33 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
 
         <div
           className="absolute top-0 inset-x-0 h-32 sm:h-40 bg-gradient-to-b from-[#050505]/90 via-[#050505]/40 to-transparent pointer-events-none z-[1] transition-opacity duration-300"
-          style={{ opacity: Math.max(0, 1 - scrollProgress * 2.5) }}
+          style={{
+            opacity: Math.max(
+              0,
+              1 - scrollProgress * 2.5
+            ),
+          }}
           aria-hidden="true"
         />
 
+        {/* TOP CONTENT */}
         <div
           className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 text-center pt-3 sm:pt-6 transition-opacity duration-300"
           style={{
-            opacity: Math.max(0, 1 - scrollProgress * 2.5),
-            pointerEvents: scrollProgress > 0.3 ? 'none' : 'auto',
+            opacity: Math.max(
+              0,
+              1 - scrollProgress * 2.5
+            ),
+            pointerEvents:
+              scrollProgress > 0.3
+                ? 'none'
+                : 'auto',
           }}
         >
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#111111]/90 border border-[#8B1E1E]/60 shadow-lg shadow-[#2C0F12]/30 backdrop-blur-md mb-2 sm:mb-3">
             <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F9040C] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#F9040C]"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F9040C] opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#F9040C]" />
             </span>
 
             <span className="font-heading font-extrabold text-[10px] sm:text-xs uppercase tracking-widest text-[#FCE9E9]">
@@ -424,7 +601,8 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
           </div>
 
           <h1 className="font-heading font-black text-2xl sm:text-4xl md:text-5xl lg:text-6xl text-white uppercase tracking-tight leading-[0.95]">
-            RIDE THE FUTURE IN <br className="hidden sm:inline" />
+            RIDE THE FUTURE IN{' '}
+            <br className="hidden sm:inline" />
             <span className="text-[#F9040C] drop-shadow-[0_0_25px_rgba(249,4,12,0.4)]">
               ELECTRIC POWER
             </span>
@@ -432,20 +610,34 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
 
           <p className="text-[11px] sm:text-xs md:text-sm text-[#E8B7B7] max-w-2xl mx-auto font-medium mt-1.5 leading-relaxed">
             39+ verified electric scooters across{' '}
-            <strong className="text-white">Zelio</strong>,{' '}
-            <strong className="text-white">Warivo</strong>, and{' '}
-            <strong className="text-white">Dynamo</strong> in Lailunga,
-            Raigarh & Kharsia.
+            <strong className="text-white">
+              Zelio
+            </strong>
+            ,{' '}
+            <strong className="text-white">
+              Warivo
+            </strong>
+            , and{' '}
+            <strong className="text-white">
+              Dynamo
+            </strong>{' '}
+            in Lailunga, Raigarh & Kharsia.
           </p>
         </div>
 
+        {/* SCROLL INDICATOR */}
         <div
           className="relative z-10 flex flex-col items-center pointer-events-none transition-opacity duration-300 my-auto"
           style={{
             opacity:
               scrollProgress < 0.08
                 ? 1
-                : Math.max(0, 1 - (scrollProgress - 0.08) * 8),
+                : Math.max(
+                    0,
+                    1 -
+                      (scrollProgress - 0.08) *
+                        8
+                  ),
           }}
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0D0D0D]/90 border border-[#8B1E1E]/60 backdrop-blur-md shadow-lg shadow-black/60">
@@ -459,12 +651,21 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
           </div>
         </div>
 
+        {/* BOTTOM ACTIONS */}
         <div
           className="relative z-10 w-full max-w-4xl mx-auto px-4 pb-3 sm:pb-5 text-center transition-all duration-300"
           style={{
-            opacity: Math.max(0, 1 - scrollProgress * 3.0),
-            transform: `translateY(${scrollProgress * 20}px)`,
-            pointerEvents: scrollProgress > 0.2 ? 'none' : 'auto',
+            opacity: Math.max(
+              0,
+              1 - scrollProgress * 3
+            ),
+            transform: `translateY(${
+              scrollProgress * 20
+            }px)`,
+            pointerEvents:
+              scrollProgress > 0.2
+                ? 'none'
+                : 'auto',
           }}
         >
           <div
@@ -476,7 +677,10 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
               onClick={onExplore}
               className="inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl bg-[#D71920] hover:bg-[#F9040C] text-white font-heading font-black text-xs sm:text-sm uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-[#D71920]/30 hover:shadow-[#F9040C]/50 cursor-pointer group"
             >
-              <span>Explore All 39 Scooters</span>
+              <span>
+                Explore All 39 Scooters
+              </span>
+
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </button>
 
@@ -486,24 +690,33 @@ export function Hero({ onExplore, onBookTestRide }: HeroProps) {
               className="inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl bg-[#0D0D0D] hover:bg-[#2C0F12] text-white border border-[#8B1E1E] hover:border-[#F9040C] font-heading font-black text-xs sm:text-sm uppercase tracking-wider transition-all active:scale-95 shadow-md hover:shadow-lg hover:shadow-[#D71920]/20 cursor-pointer group"
             >
               <Calendar className="w-4 h-4 text-[#F9040C] group-hover:scale-110 transition-transform" />
-              <span>Book Test Ride</span>
+
+              <span>
+                Book Test Ride
+              </span>
             </button>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-[#E8B7B7] pointer-events-auto">
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0D0D0D]/90 border border-[#2C0F12]">
               <Sparkles className="w-3.5 h-3.5 text-[#F9040C]" />
-              <span>39 Verified Models</span>
+              <span>
+                39 Verified Models
+              </span>
             </div>
 
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0D0D0D]/90 border border-[#2C0F12]">
               <Zap className="w-3.5 h-3.5 text-[#F9040C]" />
-              <span>Up to 120km+ Range</span>
+              <span>
+                Up to 120km+ Range
+              </span>
             </div>
 
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0D0D0D]/90 border border-[#2C0F12]">
               <ShieldCheck className="w-3.5 h-3.5 text-[#F9040C]" />
-              <span>Lailunga • Raigarh • Kharsia</span>
+              <span>
+                Lailunga • Raigarh • Kharsia
+              </span>
             </div>
           </div>
         </div>
