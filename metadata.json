@@ -1,0 +1,6 @@
+{
+  "name": "Patel Automobiles",
+  "description": "Premier electric scooter dealership in Lailunga, Raigarh, and Kharsia offering Zelio, Warivo, and Dynamo EV scooters.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

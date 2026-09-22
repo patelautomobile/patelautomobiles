@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+  Sitemap for Patel Automobiles
+  Production domain: https://patelautomobiles.web.app
+  Note: If a custom domain is configured after deployment, replace the domain prefix accordingly.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Core Navigation Pages -->
+  <url>
+    <loc>https://patelautomobiles.web.app/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://patelautomobiles.web.app/scooters</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://patelautomobiles.web.app/about</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://patelautomobiles.web.app/stories</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://patelautomobiles.web.app/contact</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://patelautomobiles.web.app/privacy-policy</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- Zelio Electric Scooters (17 Models) -->
+  <url><loc>https://patelautomobiles.web.app/scooters/eeva-eco</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/eeva</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/eeva-zx-plus</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/eeva-ecolx</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/eeva-eco-zx</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/eeva-zx</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/x-men-2</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/little-gracy</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/gracy</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/gracy-plus</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/gracy-pro</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/legender-plus-premium</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/legender-plus</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/legender</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/mystery</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/logix</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/logix-loader</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+
+  <!-- Warivo Electric Scooters (7 Models) -->
+  <url><loc>https://patelautomobiles.web.app/scooters/neo</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/edge</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/edge-plus</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/nova</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/nova-x</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/nova-s</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/crx</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+
+  <!-- Dynamo Electric Scooters (15 Models) -->
+  <url><loc>https://patelautomobiles.web.app/scooters/x1</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/x3-t</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/infinity</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/xplore</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/lima</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/3xl-loader</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/3-x1</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/rx4</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/alpha</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/x2</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/x3</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/xl-electric-loader</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/x4</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/rx1</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://patelautomobiles.web.app/scooters/smiley</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+</urlset>

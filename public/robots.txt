@@ -1,0 +1,8 @@
+# Robots.txt for Patel Automobiles
+# Official Website: https://patelautomobiles.web.app
+# Note: If deploying to a custom domain, update the Sitemap URL below.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://patelautomobiles.web.app/sitemap.xml

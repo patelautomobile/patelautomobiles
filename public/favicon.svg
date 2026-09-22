@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="14" fill="#050505"/>
+  <rect x="2" y="2" width="60" height="60" rx="12" stroke="#8B1E1E" stroke-width="2"/>
+  <!-- Stylized Automotive Electric P & Lightning Bolt in Crimson Red -->
+  <path d="M22 14H34C40.6274 14 46 19.3726 46 26C46 32.6274 40.6274 38 34 38H28V50H22V14Z" fill="#F9040C"/>
+  <path d="M28 20H33.5C36.5376 20 39 22.4624 39 25.5C39 28.5376 36.5376 31 33.5 31H28V20Z" fill="#050505"/>
+  <polygon points="36,28 30,38 36,38 32,50 44,36 38,36" fill="#FCE9E9"/>
+</svg>
