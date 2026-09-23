@@ -306,7 +306,13 @@ export function ContactView({ onNavigate }: ContactViewProps) {
                   </div>
                 ) : (
                   /* Inquiry Form */
-                  <form onSubmit={handleSubmit} noValidate className="space-y-4 sm:space-y-5">
+                  <form
+  action="https://formsubmit.co/patelautomobile0@gmail.com"
+  method="POST"
+  className="space-y-4"
+>
+  <input type="hidden" name="_subject" value="New Enquiry - Patel Automobiles" />
+  <input type="hidden" name="_template" value="table" />
                     
                     {/* Row 1: Full Name & Phone Number */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

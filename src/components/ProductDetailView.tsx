@@ -250,7 +250,13 @@ export function ProductDetailView({
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleEnquirySubmit} className="space-y-3.5">
+              <form
+  action="https://formsubmit.co/patelautomobile0@gmail.com"
+  method="POST"
+  className="space-y-4"
+>
+  <input type="hidden" name="_subject" value="New Enquiry - Patel Automobiles" />
+  <input type="hidden" name="_template" value="table" />
                 <h4 className="font-heading font-black text-lg text-white uppercase">
                   Vehicle Enquiry: {product.brand} {product.name}
                 </h4>

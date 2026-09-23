@@ -63,7 +63,13 @@ export function TestRideForm({ initialScooter = '' }: TestRideFormProps) {
           </button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+        <form
+  action="https://formsubmit.co/patelautomobile0@gmail.com"
+  method="POST"
+  className="space-y-4"
+>
+  <input type="hidden" name="_subject" value="New Enquiry - Patel Automobiles" />
+  <input type="hidden" name="_template" value="table" />
           <div className="text-left mb-6">
             <span className="text-[11px] uppercase tracking-widest font-heading font-black text-[#F9040C] mb-1 block">
               SCHEDULE YOUR RIDE
